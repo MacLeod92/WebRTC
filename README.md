@@ -104,6 +104,10 @@ shortcuts: # custom shortcuts, default none
   service_data:
     entity_id: switch.camera_record
 
+- name: Home
+  icon: mdi:Home
+  url: https://example.com/home
+
 mode: webrtc,mse,mp4,mjpeg
 ```
 

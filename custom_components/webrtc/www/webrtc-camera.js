@@ -409,12 +409,23 @@ class WebRTCCamera extends VideoRTC {
     renderShortcuts() {
         if (!this.config.shortcuts) return;
 
-        // backward compatibility with `services` property
-        const services = this.config.shortcuts.services || this.config.shortcuts;
-
-        const icons = services.map((value, index) => `
+        const shortcuts = this.config.shortcuts;
+        const icons = shortcuts.map((value, index) => {
+            if (value.url) {
+                return `
+            <a href="${value.url}">
+              <ha-icon data-index="${index}" icon="${value.icon}" title="${value.name}"></ha-icon>
+            </a>
+          `;
+            } else if (value.service) {
+                return `
             <ha-icon data-index="${index}" icon="${value.icon}" title="${value.name}"></ha-icon>
-        `).join("");
+          `;
+            } else {
+                console.log('Invalid shortcut:', value);
+                return ''; // return an empty string for shortcuts with no URL or service
+            }
+        }).join('');
 
         const card = this.querySelector('.card');
         card.insertAdjacentHTML('beforebegin', `
@@ -430,11 +441,17 @@ class WebRTCCamera extends VideoRTC {
         <div class="shortcuts">${icons}</div>
         `);
 
-        const shortcuts = this.querySelector('.shortcuts');
-        shortcuts.addEventListener('click', ev => {
-            const value = services[ev.target.dataset.index];
-            const [domain, name] = value.service.split('.');
-            this.hass.callService(domain, name, value.service_data || {});
+        const shortcutsContainer = this.querySelector('.shortcuts');
+        shortcutsContainer.addEventListener('click', async(ev) => {
+            const value = shortcuts[ev.target.dataset.index];
+            if (value.service) {
+                const[domain, service] = value.service.split('.');
+                try {
+                    await this.hass.callService(domain, service, value.service_data);
+                } catch (e) {
+                    console.error(`Failed to call service ${value.service}: ${e}`);
+                }
+            }
         });
     }
 
